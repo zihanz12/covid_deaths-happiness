@@ -1,0 +1,127 @@
+---
+title: "Visuliaze_covid_1"
+output: html_document
+---
+
+## Read Files
+```{r}
+covid = read.csv("covid_country_daily_excess_deaths.csv")
+happiness = read.csv("World Happiness Report (2021).csv")
+happiness_2021 = read.csv("world-happiness-report-2021.csv")
+```
+
+## Match the countries
+```{r}
+country = unique(happiness$Entity)
+covid1 = covid[covid$country %in% country,]
+```
+
+## Top and bottom happiness (2020 and 2021)
+```{r}
+happiness_2020 = happiness[happiness$Year==2020,]
+names(happiness_2020) <- c("Country", "Year", "Score")
+happiness_2021 = happiness_2021[,c("Country.name","Ladder.score")]
+names(happiness_2021) <- c("Country", "Score")
+
+## split date into year,month,day
+covid1 = separate(data = covid1, col = date, into = c("Year", "Month","day"), sep = "-")
+covid_2020 = covid1[covid1$Year==2020,]
+covid_2021 = covid1[covid1$Year==2021,]
+```
+
+```{r}
+## 2021 Bottom 5
+Bottom_2021 = happiness_2021[order(happiness_2021$Score),]$Country[1:5]
+covid_2021_bottom = covid_2021[covid_2021$country %in% Bottom_2021,]
+covid_2021_bottom$country = as.factor(covid_2021_bottom$country)
+covid_2021_bottom$date = as.Date(paste("2021","-",covid_2021_bottom$Month,"-",covid_2021_bottom$day,sep=''))
+
+ggplot(covid_2021_bottom,aes(x=date,y=daily_covid_cases_per_100k,color=country))+
+  geom_point()+
+  labs(title = '2021 Daily Covid Cases in 5 Least Happy Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '4 day')+
+  theme(axis.text.x = element_text(size = 8,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+
+ggplot(covid_2021_bottom,aes(x=date,y=daily_covid_deaths_per_100k,color=country))+
+  geom_point()+
+  labs(title = '2021 Daily Covid Deaths in 5 Least Happy Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '4 day')+
+  theme(axis.text.x = element_text(size = 8,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+```
+
+```{r}
+## 2021 Top 5
+Top_2021 = happiness_2021[order(happiness_2021$Score,decreasing = TRUE),]$Country[1:5]
+covid_2021_top = covid_2021[covid_2021$country %in% Top_2021,]
+covid_2021_top$country = as.factor(covid_2021_top$country)
+covid_2021_top$date = as.Date(paste("2021","-",covid_2021_top$Month,"-",covid_2021_top$day,sep=''))
+
+ggplot(covid_2021_top,aes(x=date,y=daily_covid_cases_per_100k,color=country))+
+  geom_point()+
+  labs(title = '2021 Daily Covid Cases in 5 Happiest Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '4 day')+
+  theme(axis.text.x = element_text(size = 8,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+
+ggplot(covid_2021_top,aes(x=date,y=daily_covid_deaths_per_100k,color=country))+
+  geom_point()+
+  labs(title = '2021 Daily Covid Deaths in 5 Happiest Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '4 day')+
+  theme(axis.text.x = element_text(size = 8,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+```
+
+```{r}
+## 2020 Bottom 5
+Bottom_2020 = happiness_2020[order(happiness_2020$Score),]$Country[1:5]
+covid_2020_bottom = covid_2020[covid_2020$country %in% Bottom_2020,]
+covid_2020_bottom$country = as.factor(covid_2020_bottom$country)
+covid_2020_bottom$date = as.Date(paste("2020","-",covid_2020_bottom$Month,"-",covid_2020_bottom$day,sep=''))
+unique(covid_2020_bottom$date)
+
+
+ggplot(covid_2020_bottom,aes(x=date,y=daily_covid_cases_per_100k,color=country))+
+  geom_point()+
+  labs(title = '2020 Daily Covid Cases in 5 Least Happy Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '1 week',limits=c(as.Date("2020-03-12"),as.Date("2020-12-18")))+
+  theme(axis.text.x = element_text(size = 7,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+
+
+
+ggplot(covid_2020_bottom,aes(x=date,y=daily_covid_deaths_per_100k,color=country))+
+  geom_point()+
+  labs(title = '2020 Daily Covid Deaths in 5 Least Happy Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '1 week',limits=c(as.Date("2020-03-12"),as.Date("2020-12-18")))+
+  theme(axis.text.x = element_text(size = 7,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+
+```
+
+```{r}
+## 2020 Top 5
+Top_2020 = happiness_2020[order(happiness_2020$Score,decreasing = TRUE),]$Country[1:5]
+covid_2020_top = covid_2020[covid_2020$country %in% Top_2020,]
+covid_2020_top$country = as.factor(covid_2020_top$country)
+covid_2020_top$date = as.Date(paste("2020","-",covid_2020_top$Month,"-",covid_2020_top$day,sep=''))
+
+ggplot(covid_2020_top,aes(x=date,y=daily_covid_cases_per_100k,color=country))+
+  geom_point()+
+  labs(title = '2020 Daily Covid Cases in 5 Happiest Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '1 week',limits=c(as.Date("2020-03-12"),as.Date("2020-12-18")))+
+  theme(axis.text.x = element_text(size = 7,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+
+
+
+ggplot(covid_2020_top,aes(x=date,y=daily_covid_deaths_per_100k,color=country))+
+  geom_point()+
+  labs(title = '2020 Daily Covid Deaths in 5 Happiest Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '1 week',limits=c(as.Date("2020-03-12"),as.Date("2020-12-18")))+
+  theme(axis.text.x = element_text(size = 7,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+
+```
+

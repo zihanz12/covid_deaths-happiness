@@ -1,0 +1,40 @@
+---
+title: "vacci_happiness"
+auther: "Kimmy Liu"
+output: html_document
+---
+
+```{r, include=FALSE}
+library("dplyr")
+library(tidyverse)
+```
+
+### Get hapiness data
+```{r}
+happiness_2020 = read.csv("data/world-happiness-report-2020.csv")
+happiness_2020 = happiness_2020 %>%
+  select(Country.name, Ladder.score)
+
+happiness_2020
+```
+
+### merge two dataset
+```{r}
+world_vacci_data_2021 = read.csv("data/world_vacci_data_2021.csv")
+```
+
+
+```{r}
+vacci_happiness = left_join(world_vacci_data_2021, happiness_2020, by = c("location"="Country.name"))
+vacci_happiness = vacci_happiness %>%
+  select(location, people_fully_vaccinated_per_hundred, Ladder.score) %>%
+  drop_na()
+
+vacci_happiness
+```
+
+### Export to .csv
+```{r}
+write.csv(vacci_happiness,"data/vacci_happiness.csv", row.names = FALSE)
+```
+

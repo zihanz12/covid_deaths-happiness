@@ -1,0 +1,179 @@
+---
+title: "presentation"
+auther: "Kimmy Liu"
+output: html_document
+---
+
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+library("ggplot2")
+library("dplyr")
+```
+
+### In this step, we plot vaccination trend for 5 most happiest countries and 5 least countries. By comparing the plot we can see a clear relationship and trend between vaccination rate and happy score. 
+
+#### Here we calculate 5 most happiest countries
+```{r}
+happiness = read.csv("data/world-happiness-report-2020.csv")
+
+top5 = happiness %>%
+  head(5) %>%
+  select(Country.name)
+top5
+```
+
+
+#### Here we calculate 5 least happiest countries
+```{r}
+bottom5 = happiness %>%
+  tail(5) %>%
+  select(Country.name)
+bottom5
+```
+
+
+#### Here we select vaccination data for the 5 most happiest countries
+```{r, warning=FALSE}
+vacci = read.csv("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv")
+top5vacci = vacci %>%
+  filter(location == "Finland" | location == "Denmark" | location == "Switzerland" | location == "Iceland" | location == "Netherlands")
+
+top5vacci$date = as.Date(top5vacci$date, "%Y-%m-%d")
+```
+
+
+#### Here we plot vaccination rate trend for the 5 most happiest countries
+```{r}
+ggplot(top5vacci,aes(x=date,y=people_fully_vaccinated_per_hundred,color=location))+
+  geom_point()+
+  labs(title = '2021 Daily Covid Vaccinations Rate in 5 Most Happy Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '10 day')+
+  theme(axis.text.x = element_text(size = 8,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+```
+
+#### Here we select vaccination data for the 5 least happiest countries
+```{r, warning=FALSE}
+bottom5vacci = vacci %>%
+  filter(location == "Lesotho" | location == "Botswana" | location == "Rwanda" | location == "Zimbabwe" | location == "Afghanistan")
+
+bottom5vacci$date = as.Date(bottom5vacci$date, "%Y-%m-%d")
+```
+
+
+#### Here we plot vaccination rate trend for the 5 least happiest countries
+```{r}
+ggplot(bottom5vacci,aes(x=date,y=people_fully_vaccinated_per_hundred,color=location))+
+  geom_point()+
+  labs(title = '2021 Daily Covid Vaccinations Rate in 5 Least Happy Countries')+
+  theme_bw()+
+  scale_x_date(date_breaks = '10 day')+
+  theme(axis.text.x = element_text(size = 8,angle = 90, hjust = 0.3, vjust = 0.3),legend.position="bottom")
+```
+
+#### These plot reveals that the 5 most happiest country apprently have higher vaccination rate. 
+
+
+
+
+### In this step, we analyze the relationship between each country's happiness score and vaccination rate, and we are surprised to find that there is a strong positive relationship between the two. 
+
+#### First we do some data cleaning job. 
+```{r, echo=FALSE, include=FALSE}
+library("dplyr")
+library("tidyr")
+library("ggplot2")
+```
+
+```{r}
+row_data = read.csv("https://raw.githubusercontent.com/Hush-Baby-Hush/covid-19-data/master/public/data/vaccinations/vaccinations.csv")
+```
+
+#### Since the raw data is a daily reported dataset, we get the latest vaccination rate by groupby each country and select the last rows from each group.
+
+#### Get 2021 data by select from last row:
+```{r}
+world_vacci_data_2021 = row_data %>%
+  select(location, date, people_vaccinated, people_fully_vaccinated, people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred) %>% 
+  group_by(location) %>% 
+  filter(row_number()==n()) %>% 
+  select(-date)
+```
+
+
+#### Get hapiness data:
+```{r}
+happiness_2020 = read.csv("https://raw.githubusercontent.com/illinois-stat447/fa21-prj-shiyuan8-sw20-zihanz12-zl32/master/data/world-happiness-report-2020.csv?token=ANGGHITN6HBZTJCVIN66RETBXLPVK")
+happiness_2020 = happiness_2020 %>%
+  select(Country.name, Ladder.score)
+```
+
+
+#### merge vaccination data with world happiness data:
+```{r}
+vacci_happiness = left_join(world_vacci_data_2021, happiness_2020, by = c("location"="Country.name"))
+vacci_happiness = vacci_happiness %>%
+  select(location, people_fully_vaccinated_per_hundred, Ladder.score) %>%
+  drop_na()
+```
+
+
+#### Plot scatter plot and see correlation between vaccination rate and happiness score for countries where both data are available:
+```{r}
+ggplot(vacci_happiness, aes(x = people_fully_vaccinated_per_hundred, y = Ladder.score)) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    ggtitle("Vaccination Rate vs Happiness Score") +
+    xlab("People Fully Vaccinated Per Hundred") +
+    ylab("Happiness Score") +
+    theme_light()
+```
+
+
+#### This plot reveals the relationship between country vaccination rate and country happiness scores. We can see from the plot that they are positive related, and countries with higher vaccination rate generally have higher happiness score. 
+
+
+### Next, we prepare data for world map vaccination rate:
+```{r}
+row_data = read.csv("https://raw.githubusercontent.com/Hush-Baby-Hush/covid-19-data/master/public/data/vaccinations/vaccinations.csv")
+```
+
+
+#### Vaccination is not available in some countries 2020, so we need to set these countries's vaccination rate to zero. 
+
+#### Get location where vaccination available in 2020:
+```{r}
+location_2020 = row_data %>%
+  select(location, date, people_vaccinated, people_fully_vaccinated, people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred) %>% 
+  filter(date<"2021-01-01") %>% 
+  drop_na(people_vaccinated) %>% 
+  group_by(location) %>% 
+  filter(row_number()==n())
+```
+
+
+#### Get location where vaccination not available in 2020 by select first available date reported in each country and compare it with 2020-12-31:
+```{r}
+location_2021 = row_data %>%
+  select(location, date, people_vaccinated, people_fully_vaccinated, people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred) %>% 
+  group_by(location) %>% 
+  filter(row_number()==1) %>% 
+  filter(date>"2020-12-31")
+```
+
+
+#### Create 2020 zero data for countries that don't have vaccination in 2020:
+```{r}
+country2020_zero = location_2021 %>%
+  select(location) %>%
+  mutate(date = "2020-12-31", people_vaccinated = 0, people_fully_vaccinated = 0, people_vaccinated_per_hundred = 0, people_fully_vaccinated_per_hundred = 0)
+```
+
+
+#### Combine the two datasets into world_vacci_data_2020:
+```{r}
+world_vacci_data_2020 = rbind(location_2020, country2020_zero)
+world_vacci_data_2020 = world_vacci_data_2020 %>%
+  select(-date) 
+```
+
+#### Now, we have finished data cleaning and preparation for world maps vaccination rate. (Songyuan will present world maps)

@@ -1,0 +1,256 @@
+---
+title: "world_map_plots"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)              
+library(tidyverse)            
+```
+
+## R Markdown
+
+
+```{r world happiness}
+world_happiness <- readr::read_csv("https://raw.githubusercontent.com/illinois-stat447/fa21-prj-shiyuan8-sw20-zihanz12-zl32/master/data/world-happiness-report-2020.csv?token=AKH4K3ZTOOQABV5NEUJJGQLBXJOCQ",show_col_types = FALSE)
+
+world_happiness$region = world_happiness$`Country name`
+
+world_happiness = world_happiness |>
+  mutate(region = replace(region, region == 'USA', 'United States'))
+
+world_happiness = world_happiness |>
+  mutate(region = replace(region, region == 'Democratic Republic of the Congo', 'Democratic Republic of Congo'))
+
+world_happiness = world_happiness |>
+  mutate(region = replace(region, region == 'UK', 'United Kingdom'))
+
+world_happiness = world_happiness |>
+  mutate(region = replace(region, region == 'Greenland', 'Denmark'))
+
+
+mapdata <- map_data("world") ##ggplot2
+# View(mapdata)
+
+new_mapdata = mapdata |>
+  mutate(region = replace(region, region == 'USA', 'United States'))
+
+new_mapdata = new_mapdata |>
+  mutate(region = replace(region, region == 'Democratic Republic of the Congo', 'Democratic Republic of Congo'))
+
+new_mapdata = new_mapdata |>
+  mutate(region = replace(region, region == 'UK', 'United Kingdom'))
+
+new_mapdata = new_mapdata |>
+  mutate(region = replace(region, region == 'Greenland', 'Denmark'))
+
+
+mapdata_world_happiness <- left_join(new_mapdata, world_happiness, by="region")
+# View(mapdata)
+
+#remove na
+# mapdata1<-mapdata |> filter(!is.na(mapdata$`Ladder score`))
+# View(mapdata1)
+
+map1<-ggplot(mapdata_world_happiness, aes( x = long, y = lat, group=group)) +
+  geom_polygon(aes(fill = `Ladder score`), color = "black")
+
+map2 <- map1 + scale_fill_gradient(name = "Ladder score", low = "yellow", high =  "red", na.value = "grey50")+
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        rect = element_blank())
+map2
+
+```
+
+
+```{r covid, message = FALSE, warning=FALSE}
+covid_data_2020 = readr::read_csv("https://raw.githubusercontent.com/illinois-stat447/fa21-prj-shiyuan8-sw20-zihanz12-zl32/master/data/covid_2020_total.csv?token=AKH4K33CEG4UJXXTNV7LLFLBXJTT2", show_col_types = FALSE)
+#remove first index column
+
+covid_data_2020 <- covid_data_2020[ -c(1) ]
+# View(covid_data_2020)
+covid_data_2020$region = covid_data_2020$`country`
+
+
+mapdata <- map_data("world") ##ggplot2
+# View(mapdata)
+
+new_mapdata = mapdata |>
+  mutate(region = replace(region, region == 'USA', 'United States'))
+
+new_mapdata = new_mapdata |>
+  mutate(region = replace(region, region == 'Democratic Republic of the Congo', 'Democratic Republic of Congo'))
+
+new_mapdata = new_mapdata |>
+  mutate(region = replace(region, region == 'UK', 'United Kingdom'))
+
+new_mapdata = new_mapdata |>
+  mutate(region = replace(region, region == 'Greenland', 'Denmark'))
+
+
+# unique(new_mapdata[c("region")])
+
+mapdata_and_covid_2020 <- left_join(new_mapdata, covid_data_2020, by="region")
+# View(mapdata_and_covid_2020)
+
+
+
+# View(unique(mapdata_and_covid_2020[c("region")]))
+
+#remove na
+# mapdata_and_covid_2020<-mapdata_and_covid_2020 |> filter(!is.na(mapdata_and_covid_2020$total_cases))
+# View(mapdata_and_covid_2020)
+
+map3<-ggplot(mapdata_and_covid_2020, aes( x = long, y = lat, group=group)) +
+  geom_polygon(aes(fill = total_cases), color = "black") +
+  ggtitle("total number of covid cases world map")
+
+map4 <- map3 + scale_fill_gradient(name = "total_cases", low = "light blue", high =  "dodgerblue4", na.value = "grey50")+
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        rect = element_blank())
+map4
+
+
+map5<-ggplot(mapdata_and_covid_2020, aes( x = long, y = lat, group=group)) +
+  geom_polygon(aes(fill = death_case_ratio), color = "black")+
+  ggtitle("covid death ratio world map")
+
+map6 <- map5 + scale_fill_gradient(name = "death_case_ratio", low = "light blue", high =  "dodgerblue4", na.value = "grey50")+
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        rect = element_blank())
+map6
+
+# require(gridExtra)
+# 
+# grid.arrange(map6, map5, widths = c(10,10), ncol=2)
+```
+From the **total number of covid cases world map**, we can observe that countries such as United States, India and Brazil have very high number of covid infection rate. On the other hand, countries like China have lower covid infection rate. 
+
+However, from the **covid death ratio world map**, we can observe that countries like United States, India and Brazil, which have very high number of covid infection rate, now have a relatively lower death ratio. This interesting phenomenon could be due to effective vaccination or unreported/misrecorded death rate. 
+
+
+
+```{r }
+vaccination_data_2020 <- readr::read_csv("https://raw.githubusercontent.com/illinois-stat447/fa21-prj-shiyuan8-sw20-zihanz12-zl32/master/vaccination/data/world_vacci_data_2020.csv?token=AKH4K37S6CBXCEW544XX6K3BXJ4CK",show_col_types = FALSE)
+vaccination_data_2020$region = vaccination_data_2020$`location`
+
+mapdata_and_vaccination_2020 <- left_join(new_mapdata, vaccination_data_2020, by="region")
+
+map5<-ggplot(mapdata_and_vaccination_2020, aes( x = long, y = lat, group=group)) +
+  geom_polygon(aes(fill = people_vaccinated), color = "black")+
+  ggtitle("total number of vaccinated people world map")
+
+map6 <- map5 + scale_fill_gradient(name = "people_vaccinated", low = "light blue", high =  "dodgerblue4", na.value = "grey50")+
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        rect = element_blank())
+map6
+```
+From the **total number of vaccinated people world map**, we can observe that countries such as United States have very high vaccination rate. This justifies my previous assumption about United State's low death rate ratio. On the other hand, vaccination information is not provided for countries like China in the raw data we find. 
+
+The low vaccination rate in countries like India, Brazil and Russia could be one of the key factors that contributed to their high covid-related death incidents.
+
+
+
+To examine the whether the differences between the covid data, vaccination data and world happiness data are statistically significant, we wish to conduct ANOVA.
+
+Now we would like to merge covid data, vaccination data and world happiness data together to continue our ANOVA analysis.
+```{r code}
+world_happiness <- readr::read_csv("https://raw.githubusercontent.com/illinois-stat447/fa21-prj-shiyuan8-sw20-zihanz12-zl32/master/data/world-happiness-report-2020.csv?token=AKH4K3ZTOOQABV5NEUJJGQLBXJOCQ",show_col_types = FALSE)
+
+world_happiness$region = world_happiness$`Country name`
+
+world_happiness = world_happiness |>
+  mutate(region = replace(region, region == 'USA', 'United States'))
+
+world_happiness = world_happiness |>
+  mutate(region = replace(region, region == 'Democratic Republic of the Congo', 'Democratic Republic of Congo'))
+
+world_happiness = world_happiness |>
+  mutate(region = replace(region, region == 'UK', 'United Kingdom'))
+
+world_happiness = world_happiness |>
+  mutate(region = replace(region, region == 'Greenland', 'Denmark'))
+
+
+covid_data_2020 = readr::read_csv("https://raw.githubusercontent.com/illinois-stat447/fa21-prj-shiyuan8-sw20-zihanz12-zl32/master/data/covid_2020_total.csv?token=AKH4K33CEG4UJXXTNV7LLFLBXJTT2",show_col_types = FALSE)
+#remove first index column
+covid_data_2020 <- covid_data_2020[ -c(1) ]
+# View(covid_data_2020)
+covid_data_2020$region = covid_data_2020$`country`
+
+
+vaccination_data_2020 <- readr::read_csv("https://raw.githubusercontent.com/illinois-stat447/fa21-prj-shiyuan8-sw20-zihanz12-zl32/master/vaccination/data/world_vacci_data_2020.csv?token=AKH4K37S6CBXCEW544XX6K3BXJ4CK",show_col_types = FALSE)
+vaccination_data_2020$region = vaccination_data_2020$`location`
+
+
+covid_world_happiness <- left_join(world_happiness, covid_data_2020, by="region")
+vaccination_covid_world_happiness_2020 <- left_join(covid_world_happiness, vaccination_data_2020, by="region")
+vaccination_covid_world_happiness_2020
+
+# write.csv(vaccination_covid_world_happiness_2020,"/cloud/project/vaccination_covid_world_happiness_2020.csv")
+```
+In this analysis we consider all the data and want to examine happiness variables, covid-related variables and vaccination-related variables, explaining the happiness ladder score. 
+
+```{r}
+# head(vaccination_covid_world_happiness_2020)
+
+fit1 <- aov(`Ladder score` ~ `Generosity`+ `Perceptions of corruption`+ `total_cases` +`total_deaths` +`people_fully_vaccinated_per_hundred`+`total_cases_per_100k`+ `total_deaths_per_100k`+ `death_case_ratio` + `people_vaccinated` + `people_fully_vaccinated` + `people_vaccinated_per_hundred`+ `Freedom to make life choices` +   + `Logged GDP per capita`+ `Social support`+ `Healthy life expectancy`, vaccination_covid_world_happiness_2020)
+
+anova(fit1)
+```
+For this data, we will take p-value = 0.05 as a bench mark and we will run our analysis on significant factors based on this p-value.
+
+
+According to the Analysis of Variance Table, we can conclude the following:
+
+1. Generosity is not a significant predictor of happiness ladder score as its Pr > F value (0.4232497) is larger than 0.05. Therefore, we have fail to reject the null hypothesis that intervals is a non-significant predictor. 
+
+2. Perceptions of corruption is a significant predictor of happiness ladder score as its Pr > F value (1.015e-15) is smaller than 0.05. Therefore, we have to reject the null hypothesis that year is a non-significant predictor. 
+
+3. total_cases is a significant predictor of happiness ladder score as its Pr > F value (0.0033645) is smaller than 0.05. Therefore, we have to reject the null hypothesis that year is a non-significant predictor. 
+
+4. total_deaths is a significant predictor of happiness ladder score as its Pr > F value (0.0004451) is smaller than 0.05. Therefore, we have to reject the null hypothesis that species is a non-significant predictor. 
+
+
+5. people_fully_vaccinated_per_hundred is not a significant predictor of happiness ladder score as its Pr > F value (0.1344131) is larger than 0.05. Therefore, we have fail to reject the null hypothesis that intervals is a non-significant predictor. 
+
+
+6. total_cases_per_100k is a significant predictor of happiness ladder score as its Pr > F value (1.989e-13) is smaller than 0.05. Therefore, we have to reject the null hypothesis that species is a non-significant predictor. 
+
+7. total_deaths_per_100k is not a significant predictor of happiness ladder score as its Pr > F value (0.1954529) is larger than 0.05. Therefore, we have fail to reject the null hypothesis that intervals is a non-significant predictor. 
+
+8. death_case_ratio is a significant predictor of happiness ladder score as its Pr > F value (0.0144044) is smaller than 0.05. Therefore, we have to reject the null hypothesis that species is a non-significant predictor. 
+
+9. people_vaccinated is a significant predictor of happiness ladder score as its Pr > F value (0.0033722) is smaller than 0.05. Therefore, we have to reject the null hypothesis that species is a non-significant predictor. 
+
+10. people_fully_vaccinated is not a significant predictor of happiness ladder score as its Pr > F value (0.1480725) is larger than 0.05. Therefore, we have fail to reject the null hypothesis that intervals is a non-significant predictor. 
+
+11. people_vaccinated_per_hundred is not a significant predictor of happiness ladder score as its Pr > F value (0.4607941) is larger than 0.05. Therefore, we have fail to reject the null hypothesis that intervals is a non-significant predictor. 
+
+12. Freedom to make life choices is a significant predictor of happiness ladder score as its Pr > F value (1.301e-12) is smaller than 0.05. Therefore, we have to reject the null hypothesis that species is a non-significant predictor. 
+
+13. Logged GDP per capita is a significant predictor of happiness ladder score as its Pr > F value (4.285e-12) is smaller than 0.05. Therefore, we have to reject the null hypothesis that species is a non-significant predictor. 
+
+14. Social support is a significant predictor of happiness ladder score as its Pr > F value (0.0001988) is smaller than 0.05. Therefore, we have to reject the null hypothesis that species is a non-significant predictor. 
+
+15. Healthy life expectancy is not a significant predictor of happiness ladder score as its Pr > F value (0.0725201) is larger than 0.05. Therefore, we have fail to reject the null hypothesis that intervals is a non-significant predictor. 
+
+**In conclusion, we can conclude that perceptions of corruption, total covid cases, total covid deaths, total covid cases per 100k,  covid death case ratio, number of vaccinated people, freedom to make life choices, logged GDP per capita and social support are significant predictor of happiness of a country's citizens.**

@@ -1,0 +1,80 @@
+---
+title: "vaccination_data_cleaning"
+author: "Kimmy Liu"
+output: html_document
+---
+
+
+### Setup
+```{r, echo=FALSE, include=FALSE}
+library("dplyr")
+library("tidyr")
+```
+
+```{r}
+row_data = read.csv("https://raw.githubusercontent.com/Hush-Baby-Hush/covid-19-data/master/public/data/vaccinations/vaccinations.csv")
+```
+
+### Get location where vaccination available in 2020
+```{r}
+location_2020 = row_data %>%
+  select(location, date, people_vaccinated, people_fully_vaccinated, people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred) %>% 
+  filter(date<"2021-01-01") %>% 
+  drop_na(people_vaccinated) %>% 
+  group_by(location) %>% 
+  filter(row_number()==n())
+
+location_2020
+```
+
+### Get location where vaccination not available in 2020
+```{r}
+location_2021 = row_data %>%
+  select(location, date, people_vaccinated, people_fully_vaccinated, people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred) %>% 
+  group_by(location) %>% 
+  filter(row_number()==1) %>% 
+  filter(date>"2020-12-31")
+
+location_2021
+```
+
+### Create 2020 zero data for these country
+```{r}
+country2020_zero = location_2021 %>%
+  select(location) %>%
+  mutate(date = "2020-12-31", people_vaccinated = 0, people_fully_vaccinated = 0, people_vaccinated_per_hundred = 0, people_fully_vaccinated_per_hundred = 0)
+
+country2020_zero
+```
+
+### Combine the two datasets into world_vacci_data_2020
+```{r}
+world_vacci_data_2020 = rbind(location_2020, country2020_zero)
+world_vacci_data_2020 = world_vacci_data_2020 %>%
+  select(-date) 
+
+world_vacci_data_2020
+```
+
+### Write to .csv
+```{r}
+write.csv(world_vacci_data_2020,"data/world_vacci_data_2020.csv", row.names = FALSE)
+```
+
+### Get 2021 data:
+```{r}
+world_vacci_data_2021 = row_data %>%
+  select(location, date, people_vaccinated, people_fully_vaccinated, people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred) %>% 
+  group_by(location) %>% 
+  filter(row_number()==n()) %>% 
+  select(-date)
+
+world_vacci_data_2021
+```
+
+### Write to .csv
+```{r}
+write.csv(world_vacci_data_2021,"data/world_vacci_data_2021.csv", row.names = FALSE)
+```
+
+

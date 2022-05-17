@@ -1,0 +1,107 @@
+---
+title: "proj_447"
+author: "zihan zhou"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# include libraries for data cleaning, data visuilazation</br>
+```{r,warning=FALSE}
+library(data.table)
+library(curl)
+library(tidyverse)  # package for data manipulation
+library(ggrepel)   # packages for plotting
+library(sf)# package for working with spatial data; sf has functions compatible with ggplot
+library(rnaturalearth)  # package for loading world map
+library(rnaturalearthdata) #  same as above
+library(countrycode)
+library(dplyr)
+library(ggplot2)
+```
+
+# Implementing data cleaning and data wrangling</br>
+```{r}
+happiness <- fread("World Happiness Report (2021).csv")
+```
+
+#### Using Package(countrycode) to assign each country to according region, and add the column to data.table(happiness)</br>
+```{r}
+happiness_ <- as_tibble(data.table::fread("World Happiness Report (2021).csv"))
+source<- pull(happiness_,Entity)
+country_code <- countrycode(source, origin = "country.name",destination = "region")
+happiness$countrycode_dt <- as.data.table(country_code)
+names(happiness)[names(happiness) == colnames(happiness)[3] ] <- "life_satisfaction"
+names(happiness)[names(happiness) == colnames(happiness)[4] ] <- "region"
+```
+
+#### Implement 'dcast' method to create desired data.table, and change the columnnames to avoid "&" and blank space.</br>
+```{r}
+happiness_1<- dcast(happiness, Year~region, value.var = "life_satisfaction", fun= list(mean), drop= FALSE)
+colnames(happiness_1)[2] = "East_Asia_and_Pacific"
+colnames(happiness_1)[3] = "Europe_and_Central_Asia" 
+colnames(happiness_1)[4] = "Latin_America_and_Caribbean" 
+colnames(happiness_1)[5] = "Middle_East_and_North_Africa"
+colnames(happiness_1)[6] = "North_America"
+colnames(happiness_1)[7] = "South_Asia"
+colnames(happiness_1)[8] = "Sub_Saharan_Africa"
+```
+
+# Data visulization</br>
+plot "Life Satisfaction in each region during 2005-2020"</br>
+```{r,warning=FALSE}
+ggplot(happiness_1,aes(x=Year)) + 
+  geom_line(aes( y= East_Asia_and_Pacific,colour= "East_Asia_and_Pacific"))+
+  geom_line(aes( y= Europe_and_Central_Asia,colour= "Europe_and_Central_Asia"))+
+  geom_line(aes( y= Latin_America_and_Caribbean,colour= "Latin_America_and_Caribbean"))+
+  geom_line(aes( y= Middle_East_and_North_Africa,colour= "Middle_East_and_North_Africa"))+
+  geom_line(aes( y= North_America,colour= "North_America"))+
+  geom_line(aes( y= South_Asia,colour= "South_Asia"))+
+  geom_line(aes( y= Sub_Saharan_Africa,colour= "Sub_Saharan_Africa")) +  
+  scale_colour_manual("", values = c("East_Asia_and_Pacific" ="orange", "Europe_and_Central_Asia" ="green",
+    "Latin_America_and_Caribbean"="grey",  "Middle_East_and_North_Africa"="lightblue",
+    "North_America"="yellow", "South_Asia" ="purple", "Sub_Saharan_Africa" ="pink"))+
+  scale_x_continuous("Year",breaks = seq(2005,2020,by=2))+ scale_y_continuous("Life Satisfaction",breaks = seq(4,8)) +
+  labs(title = "Life Satisfaction in each region during 2005-2020")
+```
+
+From this graph, we can see that: Among all these 7 regions, North_America has the highest level of life-satisfaction, and sub_saharan_africa has the lowest level of life-satisfaction for almost each year except year 2017-2019. There is also an decrease for each region(except sub_saharan_africa) during 2005-2020.
+
+#### plot "Life Satisfaction in 2018" for each country</br>
+```{r,warning=FALSE}
+ggplot(happiness[Year==2018], aes(x=life_satisfaction))+geom_histogram(aes(fill=region),binwidth = 0.5)+ 
+  facet_wrap( ~region) + labs("Life Satisfaction in 2018")
+```
+
+From the histogram graph above, we can see that in year 2018, most countries in Europe&central asia, Lation America& Caribbran, and East Asia&Pacific has life_satisfaction over 5, while most of coutries in Sub-Saharan Africa and South Asia has life_satisfaction less than 5.There exits huge disparities worldwide.
+
+
+# Create world map for "life satisfaction" in each country in year 2018</br>
+```{r}
+h1 <- happiness[Year==2018]
+world <- ne_countries(scale = "medium", returnclass = "sf")
+```
+
+#### Merge dataset "world" and dataset "happiness", and transform the output from data.frame to sf using method 'st_as_sf'</br>
+```{r}
+colnames(world)[9] = "Entity"
+merge_data <- merge(h1, world, by="Entity",all.y=TRUE)
+world_ <- st_as_sf(merge_data)
+```
+
+#### Plot the world map of happiness</br>
+```{r}
+ggplot(data = world_) + geom_sf()
+ggplot(data = world_) +geom_sf() + xlab("Longitude") + ylab("Latitude") +
+ggtitle("World map", subtitle = paste0("(", length(unique(world$name)), " countries)"))
+ggplot(data = world_) + geom_sf(color = "black", fill = "lightgreen")
+ggplot(data = world_) + geom_sf(aes(fill = life_satisfaction)) +
+scale_fill_viridis_c(option = "plasma", trans = "sqrt")
+```
+
+From the map above, we can see that: grey parts stand for countries without data recorded in year 2018; and for other parts in this world map,from colour yellow to blue, the darker the colour is for each country, the lower life_satisfaction score the coutry has. We can see that Canada and Australia and most parts of Europe has high level of life_satisfaction, while most parts of Africa has low level of life_satisfaction.
+
